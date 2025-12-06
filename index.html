@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gogeta – Basic HUD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #ffffff;
+    }
+
+    #root, #config {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #root {
+      position: relative;
+    }
+
+    /* Video background */
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Dark gradient for readability */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.05), rgba(0,0,0,0.75));
+    }
+
+    /* HUD */
+    .hud {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 10%;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      text-shadow: 0 0 6px rgba(0,0,0,0.8);
+    }
+
+    .subtitle {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-bottom: 8px;
+      text-shadow: 0 0 4px rgba(0,0,0,0.8);
+    }
+
+    .temps-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .card {
+      min-width: 80px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+
+    .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 2px;
+    }
+
+    .value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .value-unit {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-left: 2px;
+    }
+
+    .extra {
+      font-size: 9px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    /* Config view inside CAM */
+    #config {
+      display: none;
+      padding: 16px;
+      background: #050814;
+      color: #e5e7eb;
+    }
+
+    #config h1 { font-size: 20px; margin-bottom: 8px; }
+    #config p { font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+    #config code {
+      background: #111827;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Kraken LCD view -->
+  <div id="root">
+    <div class="video-bg">
+      <!-- Replace src with your hosted Gogeta MP4 -->
+      <video src="Gogeta.mp4" autoplay loop muted playsinline></video>
+    </div>
+    <div class="overlay"></div>
+    <div class="hud">
+      <div class="title">Gogeta Monitor</div>
+      <div class="subtitle">CPU &amp; GPU Temperatures</div>
+      <div class="temps-row">
+        <div class="card">
+          <div class="label">CPU</div>
+          <div class="value">
+            <span id="cpu-temp">--</span><span class="value-unit">°C</span>
+          </div>
+          <div class="extra" id="cpu-load">Load: --%</div>
+        </div>
+        <div class="card">
+          <div class="label">GPU</div>
+          <div class="value">
+            <span id="gpu-temp">--</span><span class="value-unit">°C</span>
+          </div>
+          <div class="extra" id="gpu-load">Load: --%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config view -->
+  <div id="config">
+    <h1>Gogeta – Basic HUD</h1>
+    <p>
+      This is the configuration view inside NZXT CAM. On the Kraken LCD you’ll see
+      only the video background with the CPU/GPU overlay.
+    </p>
+    <p>
+      Replace <code>Gogeta.mp4</code> in the HTML with the URL/path to your video.
+    </p>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const isKraken = params.get("kraken") === "1";
+
+    const rootEl = document.getElementById("root");
+    const configEl = document.getElementById("config");
+
+    if (isKraken) {
+      rootEl.style.display = "block";
+      configEl.style.display = "none";
+    } else {
+      rootEl.style.display = "none";
+      configEl.style.display = "block";
+    }
+
+    const cpuTempEl = document.getElementById("cpu-temp");
+    const gpuTempEl = document.getElementById("gpu-temp");
+    const cpuLoadEl = document.getElementById("cpu-load");
+    const gpuLoadEl = document.getElementById("gpu-load");
+
+    function fmtTemp(v) {
+      if (v === undefined || v === null || isNaN(v)) return "--";
+      return v.toFixed(1);
+    }
+    function fmtPercent(v) {
+      if (v === undefined || v === null || isNaN(v)) return "--";
+      return Math.round(v).toString();
+    }
+
+    window.nzxt = window.nzxt || {};
+    window.nzxt.v1 = window.nzxt.v1 || {};
+    window.nzxt.v1.onMonitoringDataUpdate = (data) => {
+      try {
+        const cpu = data.cpus?.[0];
+        const gpu = data.gpus?.[0];
+
+        if (cpu) {
+          cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
+          cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
+        }
+        if (gpu) {
+          gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
+          gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
+        }
+      } catch (e) {}
+    };
+  </script>
+</body>
+</html>
