@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Gogeta – Basic HUD</title>
+  <title>Gogeta – Kraken 280 HUD</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     html, body {
       width: 100%;
       height: 100%;
@@ -23,55 +28,35 @@
       position: relative;
     }
 
-    /* Video background */
-    .video-bg {
+    /* GIF background */
+    .bg {
       position: absolute;
       inset: 0;
+      background-image: url("Gogeta.gif"); /* <- make sure this matches your GIF filename */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       z-index: 1;
-      overflow: hidden;
     }
 
-    .video-bg video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* Dark gradient for readability */
+    /* Slight darkening for readability */
     .overlay {
       position: absolute;
       inset: 0;
-      z-index: 2;
       background: radial-gradient(circle at center, rgba(0,0,0,0.05), rgba(0,0,0,0.75));
+      z-index: 2;
     }
 
-    /* HUD */
+    /* HUD - only temp cards at the bottom */
     .hud {
       position: absolute;
       inset: 0;
       z-index: 3;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
+      align-items: flex-end;
+      justify-content: center;
       padding-bottom: 10%;
       text-align: center;
-    }
-
-    .title {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-      text-shadow: 0 0 6px rgba(0,0,0,0.8);
-    }
-
-    .subtitle {
-      font-size: 11px;
-      opacity: 0.85;
-      margin-bottom: 8px;
-      text-shadow: 0 0 4px rgba(0,0,0,0.8);
     }
 
     .temps-row {
@@ -113,7 +98,7 @@
       margin-top: 2px;
     }
 
-    /* Config view inside CAM */
+    /* Config view (inside CAM only) */
     #config {
       display: none;
       padding: 16px;
@@ -121,8 +106,17 @@
       color: #e5e7eb;
     }
 
-    #config h1 { font-size: 20px; margin-bottom: 8px; }
-    #config p { font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+    #config h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    #config p {
+      font-size: 13px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
     #config code {
       background: #111827;
       padding: 2px 4px;
@@ -132,20 +126,11 @@
   </style>
 </head>
 <body>
-  <!-- Kraken LCD view -->
+  <!-- LCD view -->
   <div id="root">
-   <div class="video-bg"
-     style="
-       background-image: url('Gogeta.gif');
-       background-size: cover;
-       background-position: center;
-       background-repeat: no-repeat;
-     ">
-</div>
-<div class="overlay"></div>
+    <div class="bg"></div>
+    <div class="overlay"></div>
     <div class="hud">
-      <div class="title">Gogeta Monitor</div>
-      <div class="subtitle">CPU &amp; GPU Temperatures</div>
       <div class="temps-row">
         <div class="card">
           <div class="label">CPU</div>
@@ -165,19 +150,21 @@
     </div>
   </div>
 
-  <!-- Config view -->
+  <!-- Config view shown only inside CAM when you click Configure -->
   <div id="config">
-    <h1>Gogeta – Basic HUD</h1>
+    <h1>Gogeta – Kraken 280 HUD Config</h1>
     <p>
-      This is the configuration view inside NZXT CAM. On the Kraken LCD you’ll see
-      only the video background with the CPU/GPU overlay.
+      This view only appears inside NZXT CAM. On the Kraken LCD, you’ll see your
+      Gogeta GIF background with CPU (left) and GPU (right) cards at the bottom.
     </p>
     <p>
-      Replace <code>Gogeta.mp4</code> in the HTML with the URL/path to your video.
+      If you rename the GIF, update the <code>background-image</code> in the
+      <code>.bg</code> CSS rule to match the new filename.
     </p>
   </div>
 
   <script>
+    // Detect Kraken Browser (LCD) vs Configuration Browser (inside CAM)
     const params = new URLSearchParams(window.location.search);
     const isKraken = params.get("kraken") === "1";
 
@@ -192,6 +179,7 @@
       configEl.style.display = "block";
     }
 
+    // Elements for temps / loads
     const cpuTempEl = document.getElementById("cpu-temp");
     const gpuTempEl = document.getElementById("gpu-temp");
     const cpuLoadEl = document.getElementById("cpu-load");
@@ -201,30 +189,41 @@
       if (v === undefined || v === null || isNaN(v)) return "--";
       return v.toFixed(1);
     }
+
     function fmtPercent(v) {
       if (v === undefined || v === null || isNaN(v)) return "--";
       return Math.round(v).toString();
     }
 
-    window.nzxt = window.nzxt || {};
-    window.nzxt.v1 = window.nzxt.v1 || {};
-    window.nzxt.v1.onMonitoringDataUpdate = (data) => {
+    // Single handler we’ll hook both ways
+    function handleMonitoringData(data) {
       try {
-        const cpu = data.cpus?.[0];
-        const gpu = data.gpus?.[0];
+        const cpu = data.cpus && data.cpus[0];
+        const gpu = data.gpus && data.gpus[0];
 
         if (cpu) {
           cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
           cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
         }
+
         if (gpu) {
           gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
           gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
         }
-      } catch (e) {}
-    };
+      } catch (e) {
+        // ignore errors on the LCD
+      }
+    }
+
+    // Hook into NZXT CAM monitoring in BOTH supported ways
+
+    // 1) Newer docs pattern: window.nzxt.v1.onMonitoringDataUpdate(...)
+    window.nzxt = window.nzxt || {};
+    window.nzxt.v1 = window.nzxt.v1 || {};
+    window.nzxt.v1.onMonitoringDataUpdate = handleMonitoringData;
+
+    // 2) Fallback / alt pattern: window.onMonitoringDataUpdate(...)
+    window.onMonitoringDataUpdate = handleMonitoringData;
   </script>
 </body>
 </html>
-
-
