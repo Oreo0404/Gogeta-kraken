@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Gogeta – Kraken 280 HUD</title>
+  <title>Gogeta – Kraken HUD</title>
   <style>
     * {
       box-sizing: border-box;
@@ -19,12 +19,9 @@
       color: #ffffff;
     }
 
-    #root, #config {
+    #root {
       width: 100vw;
       height: 100vh;
-    }
-
-    #root {
       position: relative;
     }
 
@@ -32,7 +29,7 @@
     .bg {
       position: absolute;
       inset: 0;
-      background-image: url("Gogeta.gif"); /* <- make sure this matches your GIF filename */
+      background-image: url("Gogeta.gif"); /* <-- make sure this matches your GIF name */
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -97,36 +94,9 @@
       opacity: 0.7;
       margin-top: 2px;
     }
-
-    /* Config view (inside CAM only) */
-    #config {
-      display: none;
-      padding: 16px;
-      background: #050814;
-      color: #e5e7eb;
-    }
-
-    #config h1 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-
-    #config p {
-      font-size: 13px;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-
-    #config code {
-      background: #111827;
-      padding: 2px 4px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
-  <!-- LCD view -->
   <div id="root">
     <div class="bg"></div>
     <div class="overlay"></div>
@@ -150,80 +120,47 @@
     </div>
   </div>
 
-  <!-- Config view shown only inside CAM when you click Configure -->
-  <div id="config">
-    <h1>Gogeta – Kraken 280 HUD Config</h1>
-    <p>
-      This view only appears inside NZXT CAM. On the Kraken LCD, you’ll see your
-      Gogeta GIF background with CPU (left) and GPU (right) cards at the bottom.
-    </p>
-    <p>
-      If you rename the GIF, update the <code>background-image</code> in the
-      <code>.bg</code> CSS rule to match the new filename.
-    </p>
-  </div>
-
   <script>
-  // Detect Kraken Browser (LCD) vs Configuration Browser (inside CAM)
-  const params = new URLSearchParams(window.location.search);
-  const isKraken = params.get("kraken") === "1";
+    // Grab DOM elements
+    const cpuTempEl = document.getElementById("cpu-temp");
+    const gpuTempEl = document.getElementById("gpu-temp");
+    const cpuLoadEl = document.getElementById("cpu-load");
+    const gpuLoadEl = document.getElementById("gpu-load");
 
-  const rootEl = document.getElementById("root");
-  const configEl = document.getElementById("config");
-
-  if (isKraken) {
-    rootEl.style.display = "block";
-    configEl.style.display = "none";
-  } else {
-    rootEl.style.display = "none";
-    configEl.style.display = "block";
-  }
-
-  // DOM refs
-  const cpuTempEl = document.getElementById("cpu-temp");
-  const gpuTempEl = document.getElementById("gpu-temp");
-  const cpuLoadEl = document.getElementById("cpu-load");
-  const gpuLoadEl = document.getElementById("gpu-load");
-
-  function fmtTemp(v) {
-    if (v === undefined || v === null || isNaN(v)) return "--";
-    return v.toFixed(1);
-  }
-
-  function fmtPercent(v) {
-    if (v === undefined || v === null || isNaN(v)) return "--";
-    return Math.round(v).toString();
-  }
-
-  function handleMonitoringData(data) {
-    try {
-      const cpu = data && data.cpus && data.cpus[0];
-      const gpu = data && data.gpus && data.gpus[0];
-
-      if (cpu) {
-        cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
-        cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
-      }
-
-      if (gpu) {
-        gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
-        gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
-      }
-    } catch (e) {
-      // ignore on LCD
+    function fmtTemp(v) {
+      if (v === undefined || v === null || isNaN(v)) return "--";
+      return v.toFixed(1);
     }
-  }
 
-  // 👉 Official NZXT pattern: declare window.nzxt exactly like docs
-  // This is what CAM looks for to start streaming monitoring data.
-  window.nzxt = window.nzxt || {};
-  window.nzxt.v1 = Object.assign({}, window.nzxt.v1, {
-    onMonitoringDataUpdate: handleMonitoringData
-  });
+    function fmtPercent(v) {
+      if (v === undefined || v === null || isNaN(v)) return "--";
+      return Math.round(v).toString();
+    }
 
-  // Extra fallback (older docs mention this)
-  window.onMonitoringDataUpdate = handleMonitoringData;
-</script>
+    // This matches NZXT's official docs pattern for monitoring:
+    // window.nzxt = { v1: { onMonitoringDataUpdate(data) { ... } } };
+    window.nzxt = {
+      v1: {
+        onMonitoringDataUpdate: (data) => {
+          try {
+            const cpu = data && data.cpus && data.cpus[0];
+            const gpu = data && data.gpus && data.gpus[0];
+
+            if (cpu) {
+              cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
+              cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
+            }
+
+            if (gpu) {
+              gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
+              gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
+            }
+          } catch (e) {
+            // ignore errors on the LCD
+          }
+        }
+      }
+    };
+  </script>
 </body>
 </html>
-
