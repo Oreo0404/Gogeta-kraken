@@ -1,3 +1,22 @@
+window.nzxt.v1.onMonitoringDataUpdate = (data) => { ... }
+``` :contentReference[oaicite:0]{index=0}  
+
+To be *extra* safe, let’s switch to the most conservative pattern:
+
+- Don’t overwrite `window.nzxt`
+- Just **add** `onMonitoringDataUpdate` onto whatever CAM puts there
+
+---
+
+## 1️⃣ Replace `index.html` with this version
+
+On GitHub:
+
+1. Go to your repo → `index.html` → pencil icon.
+2. Delete everything.
+3. Paste this **exact** file:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +48,7 @@
     .bg {
       position: absolute;
       inset: 0;
-      background-image: url("Gogeta.gif"); /* <-- make sure this EXACTLY matches your GIF name */
+      background-image: url("Gogeta.gif"); /* <-- must match your GIF name exactly */
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -152,15 +171,14 @@
           gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
         }
       } catch (e) {
-        // ignore on LCD
+        // ignore errors on the LCD
       }
     }
 
-    // ✅ Match NZXT official pattern without clobbering any existing nzxt object
+    // ✅ Don't overwrite NZXT's object; just add our callback
     window.nzxt = window.nzxt || {};
-    window.nzxt.v1 = Object.assign({}, window.nzxt.v1, {
-      onMonitoringDataUpdate: handleMonitoringData
-    });
+    window.nzxt.v1 = window.nzxt.v1 || {};
+    window.nzxt.v1.onMonitoringDataUpdate = handleMonitoringData;
   </script>
 </body>
 </html>
