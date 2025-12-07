@@ -164,66 +164,66 @@
   </div>
 
   <script>
-    // Detect Kraken Browser (LCD) vs Configuration Browser (inside CAM)
-    const params = new URLSearchParams(window.location.search);
-    const isKraken = params.get("kraken") === "1";
+  // Detect Kraken Browser (LCD) vs Configuration Browser (inside CAM)
+  const params = new URLSearchParams(window.location.search);
+  const isKraken = params.get("kraken") === "1";
 
-    const rootEl = document.getElementById("root");
-    const configEl = document.getElementById("config");
+  const rootEl = document.getElementById("root");
+  const configEl = document.getElementById("config");
 
-    if (isKraken) {
-      rootEl.style.display = "block";
-      configEl.style.display = "none";
-    } else {
-      rootEl.style.display = "none";
-      configEl.style.display = "block";
-    }
+  if (isKraken) {
+    rootEl.style.display = "block";
+    configEl.style.display = "none";
+  } else {
+    rootEl.style.display = "none";
+    configEl.style.display = "block";
+  }
 
-    // Elements for temps / loads
-    const cpuTempEl = document.getElementById("cpu-temp");
-    const gpuTempEl = document.getElementById("gpu-temp");
-    const cpuLoadEl = document.getElementById("cpu-load");
-    const gpuLoadEl = document.getElementById("gpu-load");
+  // DOM refs
+  const cpuTempEl = document.getElementById("cpu-temp");
+  const gpuTempEl = document.getElementById("gpu-temp");
+  const cpuLoadEl = document.getElementById("cpu-load");
+  const gpuLoadEl = document.getElementById("gpu-load");
 
-    function fmtTemp(v) {
-      if (v === undefined || v === null || isNaN(v)) return "--";
-      return v.toFixed(1);
-    }
+  function fmtTemp(v) {
+    if (v === undefined || v === null || isNaN(v)) return "--";
+    return v.toFixed(1);
+  }
 
-    function fmtPercent(v) {
-      if (v === undefined || v === null || isNaN(v)) return "--";
-      return Math.round(v).toString();
-    }
+  function fmtPercent(v) {
+    if (v === undefined || v === null || isNaN(v)) return "--";
+    return Math.round(v).toString();
+  }
 
-    // Single handler we’ll hook both ways
-    function handleMonitoringData(data) {
-      try {
-        const cpu = data.cpus && data.cpus[0];
-        const gpu = data.gpus && data.gpus[0];
+  function handleMonitoringData(data) {
+    try {
+      const cpu = data && data.cpus && data.cpus[0];
+      const gpu = data && data.gpus && data.gpus[0];
 
-        if (cpu) {
-          cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
-          cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
-        }
-
-        if (gpu) {
-          gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
-          gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
-        }
-      } catch (e) {
-        // ignore errors on the LCD
+      if (cpu) {
+        cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
+        cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
       }
+
+      if (gpu) {
+        gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
+        gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
+      }
+    } catch (e) {
+      // ignore on LCD
     }
+  }
 
-    // Hook into NZXT CAM monitoring in BOTH supported ways
+  // 👉 Official NZXT pattern: declare window.nzxt exactly like docs
+  // This is what CAM looks for to start streaming monitoring data.
+  window.nzxt = window.nzxt || {};
+  window.nzxt.v1 = Object.assign({}, window.nzxt.v1, {
+    onMonitoringDataUpdate: handleMonitoringData
+  });
 
-    // 1) Newer docs pattern: window.nzxt.v1.onMonitoringDataUpdate(...)
-    window.nzxt = window.nzxt || {};
-    window.nzxt.v1 = window.nzxt.v1 || {};
-    window.nzxt.v1.onMonitoringDataUpdate = handleMonitoringData;
-
-    // 2) Fallback / alt pattern: window.onMonitoringDataUpdate(...)
-    window.onMonitoringDataUpdate = handleMonitoringData;
-  </script>
+  // Extra fallback (older docs mention this)
+  window.onMonitoringDataUpdate = handleMonitoringData;
+</script>
 </body>
 </html>
+
