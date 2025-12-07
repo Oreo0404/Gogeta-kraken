@@ -29,7 +29,7 @@
     .bg {
       position: absolute;
       inset: 0;
-      background-image: url("Gogeta.gif"); /* <-- make sure this matches your GIF name */
+      background-image: url("Gogeta.gif"); /* <-- make sure this EXACTLY matches your GIF name */
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -121,7 +121,7 @@
   </div>
 
   <script>
-    // Grab DOM elements
+    // DOM elements
     const cpuTempEl = document.getElementById("cpu-temp");
     const gpuTempEl = document.getElementById("gpu-temp");
     const cpuLoadEl = document.getElementById("cpu-load");
@@ -137,30 +137,30 @@
       return Math.round(v).toString();
     }
 
-    // This matches NZXT's official docs pattern for monitoring:
-    // window.nzxt = { v1: { onMonitoringDataUpdate(data) { ... } } };
-    window.nzxt = {
-      v1: {
-        onMonitoringDataUpdate: (data) => {
-          try {
-            const cpu = data && data.cpus && data.cpus[0];
-            const gpu = data && data.gpus && data.gpus[0];
+    function handleMonitoringData(data) {
+      try {
+        const cpu = data && data.cpus && data.cpus[0];
+        const gpu = data && data.gpus && data.gpus[0];
 
-            if (cpu) {
-              cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
-              cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
-            }
-
-            if (gpu) {
-              gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
-              gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
-            }
-          } catch (e) {
-            // ignore errors on the LCD
-          }
+        if (cpu) {
+          cpuTempEl.textContent = fmtTemp(cpu.temperatureCelsius);
+          cpuLoadEl.textContent = "Load: " + fmtPercent(cpu.loadPercentage) + "%";
         }
+
+        if (gpu) {
+          gpuTempEl.textContent = fmtTemp(gpu.temperatureCelsius);
+          gpuLoadEl.textContent = "Load: " + fmtPercent(gpu.loadPercentage) + "%";
+        }
+      } catch (e) {
+        // ignore on LCD
       }
-    };
+    }
+
+    // ✅ Match NZXT official pattern without clobbering any existing nzxt object
+    window.nzxt = window.nzxt || {};
+    window.nzxt.v1 = Object.assign({}, window.nzxt.v1, {
+      onMonitoringDataUpdate: handleMonitoringData
+    });
   </script>
 </body>
 </html>
